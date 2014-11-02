@@ -1,15 +1,14 @@
 //
 //	File: sudoku.h
-//	Date: October 2014
+//	Date: November 2014
 //
-//	Programmed by Suhan Ree for Insight Engineering Fellows Code Challenge.
+//	Programmed by Suhan Ree for Insight Engineering Fellows Coding Challenge.
 //
-//	The program solve the puzzle Sudoku.
+//	The program solves the puzzle Sudoku.
 //
-//	Everything is put into two files (header, source) 
+//	Everything is put into two files (header & source) 
 //		to make it easier to read and compile.
 //
-
 
 #include <iostream>
 #include <fstream>
@@ -19,14 +18,14 @@
 #include <string>
 #include <cstdlib>
 
-// Some names from std to be used in the code.
+// Some names from std to be used in the code frequently.
 using std::cout;	
 using std::cin;
 using std::endl;
 using std::vector;
 using std::string;
 
-// classes for error exceptions.
+// Classes for error exceptions.
 struct BadSize {};
 struct BadInput {};
 struct BadValue {};
@@ -45,12 +44,12 @@ class Pos {
 	// Destructor.
 	~Pos() {};
 
-	// Print the values.
+	// Prints the values.
 	void print() const {
 		std::cout << '(' << r << ',' << c << ")\n";
 	};
 
-	// Set the size of the board.
+	// Sets the size of the board.
 	static void setSize(short sR, short sC) {
 		if (sR < 4 || sC < 4 || sR > 100 || sC > 100) throw BadSize();
 		sizeR = sR;
@@ -60,13 +59,16 @@ class Pos {
    public : // public, to access the point values easier.
    	short r, c; 
 	static short sizeR, sizeC; // size of the board: sizeR x sizeC.
+				// In Sudoku puzzles, sizeR = sizeC always.	
 };
 
-// Initialize static variables of Pos class(can be changed later using setSize)
+// Initializes static variables of Pos class(can be changed later using setSize)
 short Pos::sizeR = 9; 
 short Pos::sizeC = 9;
 
 // A class that defines the "less than" function for the Pos class
+// Needed because Pos will  be used as keys for a map container.
+// The row-wise order: (0,0), (0,1), ..., (1,0), (1,1), (1,2), ...
 class PosLessThan {
    public :
 	inline bool operator() (const Pos & p1, const Pos & p2) {
@@ -77,54 +79,51 @@ class PosLessThan {
 // Class that represents a board for Sudoku.
 // The size of the board can be set by the user (default: 9x9).
 // Values at cells are represented by the type 'unsigned char',
-// 	(0 means empty, and numbers between 1 and size will be used as values.
+// 	(0 means empty, and numbers between 1 and size will be used as values.)
+// Two arrays will be used to store board information: for value and emptiness.
 class Board {
    public:
 	// Constructor.
-	// (n*n) will be the size of the board. (Assumed 2 <= n <= 10)
+	// n^2 will be the size of the board. (Assumed 2 <= n <= 10)
 	// For example, for n = 3 (default), 9x9 board will be used.
-	Board(int n = 3): sizeBox(n), size(n*n), board(n*n), empty(n*n), nEmpty(0) {
-		Pos::setSize(size, size); // Setting the size for the Pos class).
-		for (int i = 0; i < size; i++) {
+	Board(short n = 3): sizeBox(n), size(n*n), board(n*n), empty(n*n), \
+		nEmpty(0) {
+		Pos::setSize(size, size); // Setting the size for the Pos class.
+		// Initializing arrays (assuming every cell is empty).
+		for (short i = 0; i < size; i++) {
 			board[i].resize(size);
 			empty[i].resize(size);
-			for (int j = 0; j < size; j++) empty[i][j] = false;
+			for (short j = 0; j < size; j++) empty[i][j] = true;
 		};
 	};
 
-	// Return the size of the box of the board (=sqrt(size)).
+	// Returns the size of the box of the board (=sqrt(size)).
 	short getSizeBox() const {return sizeBox;};
 
-	// Return the size of the total board.
+	// Returns the size of the total board.
 	short getSize() const {return size;};
 
-	// Get the number of empty cells.
-	short getNEmpty() const {
-		return nEmpty;
-	};
+	// Gets the number of empty cells.
+	short getNEmpty() const {return nEmpty;};
 
-	// Initialize the board (get the puzzle)(returns false if unsuccessful)
-	// from a csv file.
+	// Initializes the board by getting the puzzle from a csv file.
+	// 0 means empty (an example of a row: 0,0,1,0,0,2,0,0,3)
 	void read(string filename);
 
-	// Write the contents of the board to a csv file.
+	// Writes current contents of the board to a csv file.
+	// (Uses the same format as input.)
 	void write(string filename);
 
-	// Get the value of a cell (r,c)
-	unsigned char get(short r, short c) const {
-		return board[r][c];
-	};
+	// Gets the value of a cell (r,c)
+	unsigned char get(short r, short c) const {return board[r][c];};
 
-	// Set the value of a cell (r,c) to v.
+	// Sets the value of a cell (r,c) to v.
 	void set(short r, short c, unsigned char v);
 
-
 	// Returns true if the given cell (r,c) is empty (false if not).
-	bool ifEmpty(short r, short c) const {
-		return empty[r][c];
-	}
+	bool ifEmpty(short r, short c) const {return empty[r][c];}
 
-	// Make a given cell empty.
+	// Makes a given cell empty.
 	void makeEmpty(short r, short c) {
 		if (!ifEmpty(r,c)) { // Only when the cell is not empty.
 			empty[r][c] = true;
@@ -133,9 +132,9 @@ class Board {
 	};		
 
 	// Returns true if the value v of the given empty cell (r,c) 
-	// has conflict with other cells in the same row.
+	// has any conflict with other cells in the same row.
 	bool ifRowConflict(short r, short c, unsigned char v) const {
-		for (int j = 0; j < size; j++)
+		for (short j = 0; j < size; j++)
 			// For non-empty same-row cells.
 			if (!ifEmpty(r,j) && j != c && board[r][j] == v)
 				return true;
@@ -143,9 +142,9 @@ class Board {
 	}
 
 	// Returns true if the value v of the given empty cell (r,c) 
-	// has conflict with other cells in the same column.
+	// has any conflict with other cells in the same column.
 	bool ifColConflict(short r, short c, unsigned char v) const {
-		for (int i = 0; i < size; i++)
+		for (short i = 0; i < size; i++)
 			// For non-empty same-col cells.
 			if (!ifEmpty(i,c) && i != r && board[i][c] == v)
 				return true;
@@ -153,12 +152,13 @@ class Board {
 	}
 
 	// Returns true if the value v of the given empty cell (r,c) 
-	// has conflict with other cells in the same box (region).
+	// has any conflict with other cells in the same box (region).
 	bool ifBoxConflict(short r, short c, unsigned char v) const {
-		short rBox0 = r - r % sizeBox; // Starting row number for the box.
-		short cBox0 = c - c % sizeBox; // Starting col number for the box.
-		for (int i = rBox0; i < rBox0 + sizeBox; i++) 
-			for (int j = cBox0; j < cBox0 + sizeBox; j++) 
+		// Starting row & col number for the box of the given cell.
+		short rBox0 = r - r % sizeBox;
+		short cBox0 = c - c % sizeBox;
+		for (short i = rBox0; i < rBox0 + sizeBox; i++) 
+			for (short j = cBox0; j < cBox0 + sizeBox; j++) 
 				if (!ifEmpty(i,j) && i != r && j != c \
 					&& board[i][j] == v) 
 					return true;
@@ -172,8 +172,9 @@ class Board {
 			ifBoxConflict(r,c,v));
 	};
 
-	// Check if a given board has any conflict for all non-empty cells.
-	// (returns true if there is no conflict, and it has valid values)
+	// Checks if a given board has any conflict for non-empty cells.
+	// Returns true if there is no conflict, and it has valid values.
+	// It will be used to check the validity of the initial puzzle.
 	// 	(We still don't know if the puzzle is solvable or not.
 	// 	It can still have no solution or multiple solutions.)
 	bool ifValid() const;
@@ -189,7 +190,7 @@ class Board {
 
 // Class to solve sudoku puzzles using the recursive backtracking algorithm.
 // Three different heuristics will be used to find next empty cells 
-// for recursions, and they will be represented by derived classes.
+// for recursions, and they will be represented by 3 derived classes.
 //
 // Get the next cell to explore (implemented 3 methods to get it).
 // 1, Get empty cells from the initial puzzle and store them in an array
@@ -206,36 +207,38 @@ class Sudoku {
    public:
 	// Constructor. 
 	// 	sizeBox: size of the box in the board (default: 3).
-	// 		the size of the total board will be size^2.
+	// 		the size of the board will be sizeBox^2.
 	Sudoku(short sizeBox=3): board(sizeBox), depth() {};
 
-	// Read the initial puzzle.
+	// Reads the initial puzzle from a csv file and initialize if necessary.
 	void read(string inFilename) {
 		board.read(inFilename);
 		initialize();
 	};
 
-	// Write the solution.
+	// Writes the solution.
 	void write(string outFilename) {
 		board.write(outFilename);
 	};
 
-	// Solve the sudoku using the recursive backtracking algorithm.
-	bool solve(); // Not defined for the base class.
+	// Solves the sudoku using the recursive backtracking algorithm.
+	bool solve();
 
    protected:
-   	// Initialize the information for the possibilities of all empty cells.
-	virtual void initialize()=0;
+   	// Initializes the information for possibilities of all empty cells.
+	// It will be used to calculate extra data for the given method of 
+	// finding the next cell.
+	virtual void initialize() {};
 
-	// Find the next cell to explore and returns true if successful.
+	// Finds the next cell to explore (returns true if successful).
 	// The position and possible values of the given cell are 
-	// 	returned as arguments.
+	// 	returned as arguments using references.
 	virtual bool getNextCell(short &r, short &c, vector<unsigned char> &values)=0;
 
    protected:
    	// Board for the puzzle.
 	Board board;
-	// Depth of the current recursive step. (1st step will be depth 1).
+	// Depth of the current recursive step. (1st step will be depth 0).
 	short depth;
 };
 
@@ -246,20 +249,22 @@ class Sudoku1: public Sudoku {
    public:
 	// Constructor. 
 	// 	sizeBox: size of the box in the board (default: 3).
-	// 		the size of the total board will be size^2.
+	// 		the size of the total board will be sizeBox^2.
 	Sudoku1(short sizeBox=3): Sudoku(sizeBox), emptyCells(), \
 		possibleValues() {};
 
    protected:
-   	// Initialize the information for the possibilities of all empty cells.
-	// in a map container.
+   	// Initializes the information for possibilities of all empty cells
+	// using two arrays for positions and possibilities.
+	// The order the empty cells is stored are spatial, which means that,
+	// starting at the top-left corner, it goes from left to right, 
+	// and top to bottom.
 	virtual void initialize();
 
-	// Find the next cell to explore and returns true if successful.
+	// Finds the next cell to explore (returns true if successful).
 	// The position and possible values of the given cell are 
-	// 	returned as arguments.
+	// 	returned as arguments using references.
 	virtual bool getNextCell(short &r, short &c, vector<unsigned char> &values);
-	Pos getNextCell();
 
    protected:
 	// Arrays for storing possible values for all empty cells.
@@ -271,27 +276,19 @@ class Sudoku1: public Sudoku {
 // 2, Find all possible numbers for all empty cells from the initial
 // 	puzzle, and sort them by the number of possible numbers in an
 // 	ascending order. Get the next one using this order.
-class Sudoku2: public Sudoku {
+class Sudoku2: public Sudoku1 {
    public:
 	// Constructor. 
 	// 	sizeBox: size of the box in the board (default: 3).
-	// 		the size of the total board will be size^2.
-	Sudoku2(short sizeBox=3): Sudoku(sizeBox) {};
+	// 		the size of the total board will be sizeBox^2.
+	Sudoku2(short sizeBox=3): Sudoku1(sizeBox) {};
 
    protected:
-   	// Initialize the information for the possibilities of all empty cells.
+   	// Initializes the information for possibilities of all empty cells
+	// using two arrays for positions and possibilities.
+	// The order the empty cells are stored are sorted by the number of 
+	// possible values.
 	virtual void initialize();
-
-	// Find the next cell to explore and returns true if successful.
-	// The position and possible values of the given cell are 
-	// 	returned as arguments.
-	virtual bool getNextCell(short &r, short &c, vector<unsigned char> &values);
-	Pos getNextCell();
-
-   protected:
-	// Arrays for storing possible values for all empty cells.
-	vector<Pos> emptyCells;
-	vector< vector<unsigned char> > possibleValues;
 };
 
 // Derived class of the sudoku class (method 3).
@@ -302,21 +299,17 @@ class Sudoku3: public Sudoku {
    public:
 	// Constructor. 
 	// 	sizeBox: size of the box in the board (default: 3).
-	// 		the size of the total board will be size^2.
+	// 		the size of the total board will be sizeBox^2.
 	Sudoku3(short sizeBox=3): Sudoku(sizeBox) {};
 
    protected:
-   	// Nothing to initialize for this method.
-	virtual void initialize() {};
-
-	// Find the next cell to explore and returns true if successful.
+	// Finds the next cell to explore (returns true if successful).
 	// The position and possible values of the given cell are 
-	// 	returned as arguments.
+	// 	returned as arguments using references.
 	// In this case, it will choose the cell with the smallest number 
 	// of possibilities by searching all remaining empty cells.
 	virtual bool getNextCell(short &r, short &c, vector<unsigned char> &values);
-	Pos getNextCell();
 
    protected:
-	// Nothing extra to store for this method.
+	// Nothing extra to store for this method (no need to initialize, too).
 };
