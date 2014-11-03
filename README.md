@@ -1,87 +1,27 @@
-#Solving the Sudoku Puzzle
+Solving the Sudoku Puzzle
+=====================
 
-By Suhan Ree
-
-  
+####By Suhan Ree
   
 ##1. Introduction
 
-Here I introduce the Sudoku puzzle, chosen for this
+Here I briefly introduce the Sudoku puzzle, chosen for this
 coding challenge, describe the algorithm for solving the puzzle,
-and show briefly how the code was implemented. 
+and show how the code was implemented. 
 
-In the rules, the game is played by two players, a player (a user) and a
-dealer (played by the computer), and most basic actions are implemented
-except splitting. One thing to note is that I chose “S17” (soft 17)
-rule, which determines when the dealer stops hitting. For example, if
-the dealer’s hand has an ace and a 6, which is called the “soft 17”
-because its value can be interpreted as either 7 or 17, the S17 rule
-says that this hand should be regarded as 17 and that the dealer should
-stop hitting, since, in the blackjack, the dealer should stop if the
-dealer’s hand becomes 17 or greater. If the value is greater than 17,
-the dealer has to stop hitting even if the dealer has an ace and uses as
-11.
+The puzzle starts with a board with 81 cells (9 by 9) (it can be called as a grid, but from here on we will call it a *board*). Numbers from 1 to 9 are initially given to some cells, and remaining cells are empty. The goal of the puzzle is filling out all empty cells without breaking the rules. The rules are simple: (1) in any row of 9, any number cannot appear twice, which means all 9 numbers should appear once each, (2) the same for any column of 9, (3) the same for all 9 boxes (a board can be divided into 9 3x3 subgrids, and each subgrid is called a *box* here), too. (See Ref. **[1]**.)
+The initial puzzle is supposed to have a unique answer, but it is possible that some wrongly constructed initial settings have no solution or multiple solutions. The program should be able to find out no-solution cases.
 
-To implement this game, I chose C++, and made 4 classes: Card, Decks,
-Hand, and Game. The Card class represents each card, and the Decks and
-Hand classes represent groups of cards. A Decks object contains all
-cards used in the game, and a Hand object is for cards in a hand of a
-player or a dealer at a given moment. The Game class manages the flow of
-the game, while dealing with text-based user interactions using 5
-stages.
+This puzzle is equivalent to the exact-cover problem **[2]**, which is NP-complete **[3]**.
+The algorithm I use here is the recursive backtracking algorithm **[4]**, which basically searches through all empty cells one by one trying values. If there is no possible value for a cell, it goes back to the previous cell and try another value (backtracking). It is called recursive because it can be implemented using a simple recursive function.
+
+The programming language I chose is C++. I made 6 classes: Pos, Board, Sudoku, Sudoku1, Sudoku2, and Sudoku3. The Pos class represents the position of a cell, the Board class represents the board for the puzzle, and Sudoku (and its derived classes, Sudoku1, Sudoku2, and Sudoku3) represents the solver. To solve the puzzle, I chose the recursive backtracking algorithm, which basically goes through empty cells, assigning values, by trial and error. The order of choosing empty cells can change the running time, so I chose three methods, which are implemented in three derived classes respectively.
+
   
   
   
-##2. The puzzle Sodoku
+##2. Algorithm: how to solve
 
-There are two players: a dealer, played by a computer, and a player,
-played by a user. The game can be played as many rounds as the player
-can or wants, and the winner is determined each round. At the beginning
-of the game, the player chooses how many decks are used for the game,
-where each deck consists of 52 cards, 13 for each suit (Club, Spade,
-Heart, and Diamond); here the number of decks can be 1 or 2 or 4. You,
-the player, start with 100 chips and can bet at least 1 chip each round.
-The maximum number of chips a player can bet at each round is set at 5
-chips here. The dealer is assumed to have 10,000 chips in the beginning.
-If either the player or the dealer loses all chips, the game ends
-automatically.
-
-At each round, the objective of the player is to win the bet by creating
-a card total that is higher than the value of the dealer's hand, but not
-exceeding 21 (called, "busting"). The value of a hand is determined by
-summing over values of all cards in a hand: 2\~10 have the same values
-as the face values, while J, Q, and K (face cards) are counted as 10 and
-an ace, A, can be counted as either 1 or 11. The suits of the cards
-don't have any meaning.
-
-Once the amount of the bet is chosen for each round, two cards are dealt
-at the beginning of the round: both cards of the player are revealed,
-while only one card is revealed for the dealer. The player has two
-options: Hit or Stand.
-
-1. Hit: Take another card from the dealer. If the player's hand is not
-busted by exceeding 21, the player has another chance to choose to hit
-or stand, 
-
-2. Stand: Take no more card. Then, the player's value is determined by
-summing over all cards in the hand (A can be either 1 or 11, whichever
-is better).
-
-If the player gets busted by exceeding 21, the dealer wins. If the
-player choose to stand at a value 21 or lower, the dealer should hit
-until the value is 17 or greater (the ace, A, is counted as 11 as long
-as the sum is less than 21, even when the sum becomes 17, which is
-called "S17" rule). If the dealer gets busted, the player wins. If both
-are not busted, the winner is determined by comparing values; the player
-wins if the player's value is greater, and the dealer wins if the
-dealer's value is greater. If tied, the bet is returned to the player.
-
-If the first two cards has the value 21 by having an ace and a 10-valued
-card (10 or J or Q or K), it's called the "Blackjack" and wins every
-hand except another blackjack (it’s a tie if both get the blackjack).
-The value of an ace can be either 1 or 11, and it is not hard to
-determine which value to use: we choose 11 as long as the resulting sum
-doesn't exceed 21.
 
   
   
@@ -97,241 +37,218 @@ represented during the game.
 
 ###3.1. Classes
 
-**Card class**
+**Pos class**
 
-This class represents a card with a number (rank) and a suit.
+This class represents a position of a cell in a board.
+***
+`short r, c` :  `r`: row number (`0 <= r <= sizeR - 1`), `c`: column number (`0 <= c <= sizeC - 1`).
 
-`Card(int num , char suit)` : constructor (`num` value of the card,
-1\~13;  `suit` suit of the card, ‘c’, ‘s’, ‘h’, and ‘d’, representing
-club, spade, heart, and diamond, respectively).
+`static short sizeR, sizeC`: numbers of rows and columns of the given board respectively (default: 9).
+***
+`Pos(short r , short c)` : constructor.
 
-`int getValue()` : returns the value of the card (return values:
-1\~13).
+`static void setSize(short sizeR, short sizeC)` : sets the sizes of the given board.
 
-`string getRank()` : returns the rank of the card (return values: A,
-2, 3, …, 9, 10, J, Q, K, as string objects).  
+`void print() const` : prints the position to the stdout.  
+***
+***
+**PosLessThan class**
 
-`char getSuit()` : returns the suit of the card (return values: ‘c’,
-‘s’, ‘h’, and ‘d’, as characters).
+This class defines the less-than operation between `Pos` objects. This class is needed when we store `Pos` objects in a set or as a key of a map.
+***
+***
+**Board class**
 
+This class represents the board of the Sudoku puzzle.
+***
+`vector< vector<unsigned char> > board`: 2D array to represent the board.
 
-**Decks class**
+`vector< vector<bool> > empty`: 2D array to store true or false for emptiness of cells.
 
-This class represents cards of decks to be played in the game of
-blackjacks. The player can choose the number of decks to be used in the
-game (only 1 or 2 or 4 is allowed here).
+`short sizeBox`: size of the inner box (default: 3).
 
-`Decks(int nDeck)` : constructor (`nDeck` number of decks to be
-used, 1 or 2 or 4).
+`short size`: size of the whole board (default: 9). `size = sizeBox * sizeBox`.
 
-`void create(int nDeck)` : create the cards using `nDeck` decks.
+`short nEmpty`: number of current empty cells.
+***
+`Board(short sizeBox)`: constructor. `sizeBox` is given.
 
-`void shuffle()` : shuffle all cards and set the current card as the
-first card.
+`short getSizeBox() const`: returns `sizeBox`.
 
-`Card deal()` : returns a Card object pointed currently, and set the
-pointer to the next card.
+`short getSize() const`: returns `size`.
 
-`void print()` : writes all cards of given decks in the currently
-shuffled state on the screen.
+`short getNEmpty() const`: returns `nEmpty`.
 
+`void read(string filename)`: initializes the board by getting the puzzle from a *csv* file, named 'filename'. Here 0 means empty (an example of a row: 0,0,1,0,0,2,0,0,3).
 
-**Hand class**
+`void write(string filename) const`: writes current contents of the board to a *csv* file, named 'filename'. It uses the same format as input files.
 
-This class represents a hand (currently held cards) of a player or a
-dealer.
+`unsigned char get(short r, short c) const`: returns the value of a cell at (`r`,`c`).
+ 
+`void set(short r, short c, unsigned char v)`:  sets the value of a cell (`r`,`c`) to `v`.
 
-`Hand()` : constructor, creates a hand with no card.
+`bool ifEmpty(short r, short c) const`:  returns true if the given cell (`r`,`c`) is empty (false if not).
 
-`void addCard(Card card)` : add a card given as an argument to the
-hand.
+`void makeEmpty(short r, short c)`: makes a given cell empty.
 
-`int getValue()` : returns the current value of a hand (summed over
-card values of a hand).
+`bool ifRowConflict(short r, short c, unsigned char v) const`: returns true if the value v of the given empty cell (`r`,`c`) `  has any conflict with other cells in the same row.
 
-`int size()` : returns the number of cards in the hand.
+`bool ifColConflict(short r, short c, unsigned char v) const`: returns true if the value v of the given empty cell (`r`,`c`) `  has any conflict with other cells in the same column.
 
-`bool blackjack()` : returns true if the hand is the blackjack
-(getting 21 with two cards); false if not.
+`bool ifBoxConflict(short r, short c, unsigned char v) const`: returns true if the value v of the given empty cell (`r`,`c`) `  has any conflict with other cells in the same box.
 
-`void removeAllCards()` : removes all cards in the hand.
+`bool ifAnyConflict(short r, short c, unsigned char v) const`: returns true if the value v of the given empty cell (`r`,`c`) `  has any conflict with other cells in the same row or column or box.
 
-`void print(bool hideFirst)` : writes all cards of the hand on the
-screen (if `hideFirst` is true, the first card of the hand is hidden;
-shown if false). 
+`bool ifValid() const`: checks if a given board has any conflict for non-empty cells,
+and if all values are valid. Returns true if there is no problem, false if not.
+It will be used to check the validity of the initial puzzle.
+(We still don't know if the puzzle is solvable or not.
+It can still have no solution or multiple solutions.)
 
+***
+***
+**Sudoku class**
 
-**Game class**
+This class represents a solver of the puzzle of Sudoku. This is the abstract class, and there will be three derived classes from this class.
+***
+`Board board`:  board of the puzzle.
 
-This class manages the game.
+`short depth`: depth of the current recursive step.
 
-`Game()` : constructor, creates cards and two hands for a player and a
-dealer.
+*** 
+`Sudoku(short sizeBox)` : constructor. The default value of `sizeBox` is 3.
 
-`void play()` : plays the game (managing flows of the game, and
-letting other functions interact with the player).
+`void read(string filename)`: reads the initial puzzle from a *csv* file and initialize some data if necessary.
 
-  
-  
+`void write(string filename) const`: writes the solution to a *csv* file.
 
-###3.2. Flow of the game: 5 stages
+`bool solve()`: solves the sudoku using the recursive backtracking algorithm.
 
-To manage the flow of the game, I split the game into 5 stages, and
-implemented 5 private member functions in the Game class, each
-representing a stage. The main thing these functions do is I/O, only
-using standard I/O (text-based IO) for respective stages. They write
-information and current states of the game on the screen, and also ask
-inputs from the player during the game.
+`virtual void initialize()`: initializes the information for possibilities of all empty cells (defined in derived classes). 
 
-**Stage1: Begin the game**, `char beginGame()`
+`virtual bool getNextCell(short &r, short &c, vector<unsigned char> &values)`: finds the next cell to explore, and returns true if successful, false if there is no more empty cell (defined in derived classes).
+The position and possible values of the given cell are returned as arguments using references. 
+***
+***
+**Sudoku1 class**
 
-Output: 
-
-- a banner for the game, 
-
-- a question of how many decks to be used, 
-
-- beginning total chips for the player, 
-
-- a question of next step: whether to start a new round, or to show the
-rules, or to quit.
-
-Input: 
-
-- how many decks to be used (1/2/4; default: 1), 
-
-- next step (n/r/q; default: n) (n: new round, r: show rules, q: quit).
-
-  
-
-**Stage2: Begin a round**, `void beginRound()`
-
-Output:
-
-- showing the remaining chips of the player,
-
-- a question of how many chips to bet, and how many chips are bet.
-
-Input:
-
-- a number of chips to bet (1\~5; default: 1).
-
-  
-
-**Stage3: In a round**, `char inRound()`
-
-Output:
-
-- showing the current hands of both players (with the first card of the
-dealer hidden),
-
-- a question of next step: whether to hit, or to stand, or to show the
-rules, or to quit.
-
-Input:
-
-- next step (h/s/r/q; default: h) (h: hit, s: stand, r: show rules, q:
-quit).
-
-  
-
-**Stage4: End a round**, `void endRound(char input)`
-
-Output:
-
-- showing results of the round, and how many chips are gained or lost by
-the player,
-
-- showing the remaining chips of the player,
-
-- a question of next step: whether to start a new round, or to show the
-rules, or to quit.
-
-Input: 
-
-- next step (n/r/q; default: n) (n: new round, r: show rules, q: quit).
-
-  
-
-**Stage5: End the game**, `void endgame()`
-
-Output:
-
-- showing the remaining chips of the player, with the ending banner.
-
-Input: none.
-
-  
-  
-
-###3.3. How to run & How to play
-
-To make the code easy to evaluate, I put every code into one file,
-called *Blackjack.C* (\~600 lines). I used the gcc compiler (g++,
+This class inherits the Sudoku class.
+To store the order and the information about the empty cells in the beginning puzzle,
+two arrays will be used.
+The order the empty cells are stored is spatial, which means that,
+starting at the top-left corner, it goes from left to right, 
+and then top to bottom.
+***
+`vector<Pos> emptyCells`: the order of empty cells.                                                                
+
+`vector<  vector<unsigned char> > possibleValues`: possible values at each empty cell.
+***
+`void initialize()`: initialize two arrays based on the given puzzle.
+
+`bool getNextCell(short &r, short &c, vector<unsigned char> &values)`: finds the next cell to explore using the array `emptyCells`, and returns true if successful,  false if there is no more empty cell.
+***
+***
+**Sudoku2 class**
+
+This class inherits the Sudoku1 class.
+The same two arrays as in Sudoku1 class will be used, but
+the order the empty cells are stored is sorted by the number of possible                        
+values. The order is kept throughout the process even though the number of 
+possibilities change as other cells change.
+The function `getNextCell` will be the same as in Sudoku1 class.
+***
+`void initialize()`: initialize two arrays based on the given puzzle.
+***
+***
+**Sudoku3 class**
+
+This class inherits the Sudoku class.
+Every time the next cell is needed it finds all possible numbers for all empty cells, and choose the cell with the smallest number of possibilities.
+There is no need to store extra information and no initialization is necessary.
+***
+`bool getNextCell(short &r, short &c, vector<unsigned char> &values)`: choose the cell with the smallest number of possibilities by searching all remaining empty cells, at every step.
+The row and column number of that cell and its possible values will be returned as arguments.
+***
+
+
+
+
+###3.2. How to run and its performance
+
+To make the code easy to evaluate, I put everything into two files (hearder and source),
+called *sudoku.h* (\~300 lines) and *sudoku.C* (\~300 lines). I used the gcc compiler (g++,
 version 4.4.7) in a CentOS virtual machine, but it should work fine in
 other platforms with other compilers, I assume.
 
-Playing the game is self-explanatory once you execute the program. At
-first, the program asks how many decks to be played (1 or 2 or 4 is
-allowed here) [stage 1]. Keep in mind that, to reduce confusion, only
-the first character (excluding white spaces) is used in an input of a
-line from the player throughout the whole game, and that following
-characters before ‘Enter’ will be ignored, if any. Hence, if you type
-‘1’, ‘0’, and ‘Enter’ in this case, the program will only read 1 and use
-it as the number of decks. Valid input characters and default values (if
-no character is given by just typing ‘Enter’ for example) are given in
-all cases of user inputs. If the input character is not valid, the
-program will ask for an input again. Then a new round begins [stage 2]
-by asking how many chips will be bet in this round. Only 1\~5 chips can
-be bet in a round. Next, two cards are dealt to both players (only
-showing one card for the dealer), and a player is given a chance of
-choosing “hit” (getting one more card) or “stand” (no more card) [stage
-3]. The round ends if a player get busted or a player chooses to stand.
-Then, the winner of the round is determined and chips are given to the
-winner [stage 4]. At this stage, the player can choose to quit the game
-[stage 5] or start a new round [going back to stage 2]. If the player
-chooses to quit, the remaining chips are shown and the game ends. 
+An input file is assumed to be a *csv* file. An example of an input file (*given.csv*) is as follows.
 
-All possible user inputs during the game are: ‘n’ (new round), ‘r’
-(displaying rules), ‘h’ (hit), ‘s’ (stand), ‘q’ (quit), and numbers 1 to
-5 (used for the number of decks, or the number of chips to bet). If the
-player types only ‘Enter’ for an input, the default value shown in the
-screen will be used in all cases.
+0,3,5,2,9,0,8,6,4  
+0,8,2,4,1,0,7,0,3  
+7,6,4,3,8,0,0,9,0  
+2,1,8,7,3,9,0,4,0  
+0,0,0,8,0,4,2,3,0  
+0,4,3,0,5,2,9,7,0  
+4,0,6,5,7,1,0,0,9   
+3,5,9,0,2,8,4,1,7  
+8,0,0,9,0,0,5,2,6
+
+In this case, the solution is also written as a *csv* file (*solution.csv*) by the program as follows.
+
+1,3,5,2,9,7,8,6,4  
+9,8,2,4,1,6,7,5,3  
+7,6,4,3,8,5,1,9,2  
+2,1,8,7,3,9,6,4,5  
+5,9,7,8,6,4,2,3,1  
+6,4,3,1,5,2,9,7,8  
+4,2,6,5,7,1,3,8,9  
+3,5,9,6,2,8,4,1,7  
+8,7,1,9,4,3,5,2,6  
+
+The command line should look like this if the execution file is `a.out`,
+
+`$ ./a.out given.csv solution.csv`
+
+If the initial puzzle given by a *csv* file is invalid (*invalid.csv*), the program does not attempt to solve the puzzle, and will show the error message. If the puzzle does not have a solution (*nosol1.csv*, *nosol2.csv*, *nosol3.csv*), the program shows that it is an unsolvable puzzle. The puzzle can have multiple solutions, too; in these cases (*multi1.csv*, *multi2.csv*), the program will find just one possible solution.
+It is possible for the program to check if it has multiple solutions, but I decided not to
+implement this feature because (1) it takes longer to search through all possible solutions
+even for legitimate puzzles with a unique solution, (2) we can say that the puzzle is solvable even when there are more than one answer.
+
+Since I implemented three ways to find the next empty cell, I tried to find which method is best in performance. For 4 hard cases, I checked the CPU times for Sudoku1, Sudoku2, and Sudoku3, respectively.
+
+*hard1.csv*: 0.03, 0.24, 0.05 (sec)   
+*hard2.csv*: 0.53, 0.06, 0.37 (sec)   
+*hard3.csv*: 0.13, 11.02, 1.77 (sec)   
+*hard4.csv*: 0.03, 0.15, 0.05 (sec)   
+
+It is hard to tell which is the best based on only 4 examples, but Sudoku2 does not perform well for *hard3.csv*, while surprisingly Sudoku1 performs very well in all 4 cases.
+
+Then to really test these methods I tried a case with no solution with only 5 given values (*nosol2.csv*), and the CPU times are:
+
+*nosol2.csv*: >2 hrs, 252 sec, and 6.5 sec,   
+
+respectively, which clearly shows Sudoku1 can take too long for some cases, and Sudoku3 is the best one because it performs well in almost all cases. Hence, I decided to use Sudoku3 for this program. 
 
   
-  
-
-###3.4. Card representation in game
-
-The ranks: A (ace), 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K.
-
-The suits: c (club), s (spade), h (heart), d (diamond).
-
-For example, “A(s)” stands for the spade ace, “10(d)” stands for the
-diamond 10, and “Q(h)” stands for the heart queen.
-
-  
-  
-  
-
 ##4. Summary
 
-The logic of the game is not complicated, but the main point of this
-coding challenge seems to be how we effectively establish the user
-interface using only the standard IO (text-based IO) dealing with
-technical tradeoffs. It looked simple at first, but I realized it is
-much harder than implementing using a GUI-based IO. Frankly, I already
-have written a code for the game of blackjack before, using Python and a
-library for GUI (\~250 lines of code in Python). This time, though,
-making a clean text-based user interface has been relatively harder
-(\~500 lines of code in C++, excluding rule texts). To establish an
-effective user interface, I split the game into 5 stages, and each stage
-is implemented as a separate function in the Game class. To make the
-user input as little as possible, I chose a default value for every user
-input, so that the user can only type ‘Enter’ whenever a user input is
-needed (except to stand in a round, or to quit the game).
+In this problem, the user interface is not complicated, but the algorithm (logic) to find solutions is not easy.
+Even though the problem is equivalent to an NP-complete problem (exact-cover problem **[2,3]**), it can be solved within seconds in most cases because the size is small enough.
+Still  heuristics can be quite important as seen here, especially for hard puzzles.
+
+I used in this code the recursive backtracking algorithm **[4]**. In this algorithm, the program visits empty cells and try a possible value one by one. If a value is valid, then try another empty cell and try possible values. If there is no possible value for a cell, go back to the previous cell and try another value for that cell. If it reaches the point where there is no more empty cell, the solution is found. It is easy to see that how to find the next cell can be crucial when it comes to the performance.
+Here I implemented three different methods when finding the next empty cell, and the third one, where the cell with the minimum possibilities is found at every step, was chosen.
+It can be time-consuming to search through all remaining empty cells at every step, however, it can save a lot of computing time in extreme cases, while comparable to other methods in other cases.
+
+The reason is quite simple: we are basically performing a DFS (depth-first search) on a big tree, and if we reduce the number of branches near the top of the tree, we can reduce the number of visiting cells by a lot for big trees.
 
 
 ##5. References
 
 
+1. [http://en.wikipedia.org/wiki/Sudoku](http://en.wikipedia.org/wiki/Sudoku)
+
+1. [http://en.wikipedia.org/wiki/Exact\_cover](http://en.wikipedia.org/wiki/Exact\_cover)
+
+1. [http://en.wikipedia.org/wiki/Karp%27s\_21\_NP-complete\_problems](http://en.wikipedia.org/wiki/Karp%27s\_21\_NP-complete\_problems)
+
+1. [http://see.stanford.edu/materials/icspacs106b/H19-RecBacktrackExamples.pdf](http://see.stanford.edu/materials/icspacs106b/H19-RecBacktrackExamples.pdf)

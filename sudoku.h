@@ -103,7 +103,7 @@ class Board {
 	// Returns the size of the total board.
 	short getSize() const {return size;};
 
-	// Gets the number of empty cells.
+	// Returns the number of empty cells.
 	short getNEmpty() const {return nEmpty;};
 
 	// Initializes the board by getting the puzzle from a csv file.
@@ -112,9 +112,9 @@ class Board {
 
 	// Writes current contents of the board to a csv file.
 	// (Uses the same format as input.)
-	void write(string filename);
+	void write(string filename) const;
 
-	// Gets the value of a cell (r,c)
+	// Returns the value of a cell (r,c)
 	unsigned char get(short r, short c) const {return board[r][c];};
 
 	// Sets the value of a cell (r,c) to v.
@@ -172,19 +172,20 @@ class Board {
 			ifBoxConflict(r,c,v));
 	};
 
-	// Checks if a given board has any conflict for non-empty cells.
-	// Returns true if there is no conflict, and it has valid values.
+	// Checks if a given board has any conflict for non-empty cells,
+	// and if all values are valid. 
+	// Returns true if there is no problem, false if not.
 	// It will be used to check the validity of the initial puzzle.
 	// 	(We still don't know if the puzzle is solvable or not.
 	// 	It can still have no solution or multiple solutions.)
 	bool ifValid() const;
 
    private:
-	short sizeBox; // size of the box (region) inside the board.
-   	short size; // size of the board (size x size).
 	vector< vector<unsigned char> > board; // 2D array representing board.
 	vector< vector<bool> > empty; 	// 2D array for emptiness of cells 
 					//	(true if empty).
+	short sizeBox; // size of the box (region) inside the board.
+   	short size; // size of the board (size x size).
 	short nEmpty; // number of empty cells.
 };		
 
@@ -217,7 +218,7 @@ class Sudoku {
 	};
 
 	// Writes the solution.
-	void write(string outFilename) {
+	void write(string outFilename) const {
 		board.write(outFilename);
 	};
 
@@ -255,8 +256,8 @@ class Sudoku1: public Sudoku {
 
    protected:
    	// Initializes the information for possibilities of all empty cells
-	// using two arrays for positions and possibilities.
-	// The order the empty cells is stored are spatial, which means that,
+	// using two arrays for the order and possibilities at each empty cell.
+	// The order the empty cells are stored is spatial, which means that,
 	// starting at the top-left corner, it goes from left to right, 
 	// and top to bottom.
 	virtual void initialize();
@@ -286,7 +287,7 @@ class Sudoku2: public Sudoku1 {
    protected:
    	// Initializes the information for possibilities of all empty cells
 	// using two arrays for positions and possibilities.
-	// The order the empty cells are stored are sorted by the number of 
+	// The order the empty cells are stored is sorted by the number of 
 	// possible values.
 	virtual void initialize();
 };

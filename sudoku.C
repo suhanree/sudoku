@@ -35,7 +35,11 @@ void Board::read(string filename) {
 			values.push_back(std::atoi(temp.c_str()));
 		// Check for wrong col counts.
 		if (values.size() != size) throw BadInput(); 
-		for (short j = 0; j < size; j++) set(i, j, values[j]);
+		for (short j = 0; j < size; j++) {
+			if (values[j] < 0 || values[j] > size) 
+				throw InvalidPuzzle(); // Bad value is given.
+			set(i, j, values[j]);
+		};
 	};
 	inFile.close();
 	// Check for the validity of the given puzzle.
@@ -44,7 +48,7 @@ void Board::read(string filename) {
 
 // Writes current contents of the board to a csv file.
 // (Uses the same format as input.)
-void Board::write(string filename) {
+void Board::write(string filename) const {
 	std::ofstream outFile(filename.c_str(), std::ios::out);
 	for (short i = 0; i < size; i++)
 		for (short j = 0; j < size; j++)
@@ -66,8 +70,9 @@ void Board::set(short r, short c, unsigned char v) {
 }; 
 
 
-// Checks if a given board has any conflict for non-empty cells.
-// Returns true if there is no conflict, and it has valid values.
+// Checks if a given board has any conflict for non-empty cells,
+// and if all values are valid. 
+// Returns true if there is no problem, false if not.
 // It will be used to check the validity of the initial puzzle.
 // 	(We still don't know if the puzzle is solvable or not.
 // 	It can still have no solution or multiple solutions.)
@@ -117,7 +122,7 @@ bool Sudoku::solve() {
 };
 
 // Initializes the information for the possibilities of all empty cells
-// using two arrays for positions and possibilities.
+// using two arrays for the order and possibilities at each empty cell.
 // The order the empty cells are stored is spatial, which means that,
 // starting at the top-left corner, it goes from left to right, 
 // and top to bottom.
@@ -132,8 +137,6 @@ void Sudoku1::initialize() {
 				for (unsigned char v = 1; v <= size;v++)
 					if (!board.ifAnyConflict(i, j, v))
 						values.push_back(v);
-				// If there is no possible value, invalid.
-				if (values.size() == 0) throw InvalidPuzzle();
 				// Store possible values to a vector.
 				possibleValues.push_back(values);
 			};
@@ -160,7 +163,7 @@ bool Sudoku1::getNextCell(short &r, short &c, vector<unsigned char> &values) {
 	
 // Initializes the information for the possibilities of all empty cells
 // using two arrays for positions and possibilities.
-// The order the empty cells are stored are sorted by the number of possible
+// The order the empty cells are stored is sorted by the number of possible
 // values.
 void Sudoku2::initialize() {
 	short size = board.getSize();
@@ -176,8 +179,6 @@ void Sudoku2::initialize() {
 				for (unsigned char v = 1; v <= size;v++)
 					if (!board.ifAnyConflict(i, j, v))
 						values.push_back(v);
-				// If no possible values, throw an error.
-				if (values.size() == 0) throw InvalidPuzzle();
 				// Store the info into maps.
 				numPossibles.insert(std::pair<short, Pos>( \
 					values.size(), Pos(i, j)));
@@ -280,8 +281,8 @@ int main(int argc, char **argv) {
 	catch(InvalidPuzzle e) {
 		std::cerr << "* Given puzzle is invalid.\n";
 		std::cerr << "  Causes: (1) Any given value is not following" \
-			<< " the rule, or (2) any empty cell has no possible" \
-			<< " value.\n";
+			<< " the rule, or (2) any given value is not in the" \
+			<< " range.\n";
 		std::exit(1);
 	};
 	return 0;
