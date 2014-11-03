@@ -198,7 +198,7 @@ void Sudoku2::initialize() {
 // In this case, it will choose the cell with the smallest number 
 // of possibilities by searching all remaining empty cells.
 bool Sudoku3::getNextCell(short &r, short &c, vector<unsigned char> &values) {
-	// If there is no empty cell left, return false;
+	// If there is no empty cell left, return false
 	if (board.getNEmpty() == 0) return false;
 
 	// Temporary row and col numbers for the cell with minimum number

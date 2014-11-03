@@ -87,7 +87,7 @@ class Board {
 	// n^2 will be the size of the board. (Assumed 2 <= n <= 10)
 	// For example, for n = 3 (default), 9x9 board will be used.
 	Board(short n = 3): sizeBox(n), size(n*n), board(n*n), empty(n*n), \
-		nEmpty(0) {
+		nEmpty(n*n*n*n) { // All cells are empty in the beginning.
 		Pos::setSize(size, size); // Setting the size for the Pos class.
 		// Initializing arrays (assuming every cell is empty).
 		for (short i = 0; i < size; i++) {
