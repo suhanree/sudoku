@@ -5,35 +5,55 @@ Solving the Sudoku Puzzle
   
 ##1. Introduction
 
-Here I briefly introduce the Sudoku puzzle, chosen for this
-coding challenge, describe the algorithm for solving the puzzle,
+Here I briefly introduce the Sudoku puzzle, describe the algorithm for solving the puzzle,
 and show how the code was implemented. 
 
-The puzzle starts with a board with 81 cells (9 by 9) (it can be called as a grid, but from here on we will call it a *board*). Numbers from 1 to 9 are initially given to some cells, and remaining cells are empty. The goal of the puzzle is filling out all empty cells without breaking the rules. The rules are simple: (1) in any row of 9, any number cannot appear twice, which means all 9 numbers should appear once each, (2) the same for any column of 9, (3) the same for all 9 boxes (a board can be divided into 9 3x3 subgrids, and each subgrid is called a *box* here), too. (See Ref. **[1]**.)
-The initial puzzle is supposed to have a unique answer, but it is possible that some wrongly constructed initial settings have no solution or multiple solutions. The program should be able to find out no-solution cases.
+The puzzle starts with a board with 9 by 9 (81) cells (it can be called as a grid, but from here on we will call it a *board*). Numbers from 1 to 9 are initially given to some cells, and remaining cells are empty. The goal of the puzzle is filling out all empty cells without breaking the rules. The rules are simple: (1) in any row of 9, any number cannot appear twice, which means all 9 numbers should appear once each, (2) the same for any column of 9, (3) the same for all 9 boxes (a board can be divided into 9 3x3 regions, and each region is called a *box* here), too (see **[1]**).
+The initial puzzle is supposed to have a unique answer, but it is possible that some wrongly constructed initial puzzles have no solution or multiple solutions. The program should be able to find out no-solution cases.
 
 This puzzle is equivalent to the exact-cover problem **[2]**, which is NP-complete **[3]**.
-The algorithm I use here is the recursive backtracking algorithm **[4]**, which basically searches through all empty cells one by one trying values. If there is no possible value for a cell, it goes back to the previous cell and try another value (backtracking). It is called recursive because it can be implemented using a simple recursive function.
+The algorithm I use here is the recursive backtracking algorithm **[4]**, which basically searches through all empty cells one by one, trying values. If there is no possible value for a cell, it goes back to the previous cell and try another value (backtracking). It is called *recursive* because it can be implemented using a simple recursive function. The running time is dependent on the order of choosing empty cells, so I tried three methods of choosing the next cell.
 
-The programming language I chose is C++. I made 6 classes: Pos, Board, Sudoku, Sudoku1, Sudoku2, and Sudoku3. The Pos class represents the position of a cell, the Board class represents the board for the puzzle, and Sudoku (and its derived classes, Sudoku1, Sudoku2, and Sudoku3) represents the solver. To solve the puzzle, I chose the recursive backtracking algorithm, which basically goes through empty cells, assigning values, by trial and error. The order of choosing empty cells can change the running time, so I chose three methods, which are implemented in three derived classes respectively.
+The programming language I chose is C++. I made 6 classes: Pos, Board, Sudoku, Sudoku1, Sudoku2, and Sudoku3. The Pos class represents the position of a cell, the Board class represents the board for the puzzle, and Sudoku (and its derived classes, Sudoku1, Sudoku2, and Sudoku3) represents the solver.
+These three derived classes represent three different methods of choosing the next cell.
 
-  
   
   
 ##2. Algorithm: how to solve
 
+There are many ways to solve Sudoku puzzles, and the simplest one is the brute-force algorithm, in which it tries to match all possible configurations with the given puzzle until it finds the solution. But it is too time consuming since the number of possible configurations of the 9x9 Sudoku board is known to be about 6.7x10^21 **[1]**.
 
+Since the Sudoku is equivalent to the exact-cover problem **[2]**,  we can solve it using 
+Knuth's Algorithm X **[5]** for the exact-cover problem.
+Algorithm X is a recursive backtracking algorithm, that uses
+a matrix consisting of 0s and 1s.
+Even though it is possible to construct a matrix with 0s and 1s from a Sudoku puzzle to apply the Knuth's algorithm, 
+I use another recursive backtracking algorithm **[4]**, which basically is the same depth-first search (DFS) algorithm.
+In this algorithm, it goes through all empty cells one by one forming a tree. It starts
+with one empty cell, and try values one by one. If a value has no conflict, choose another empty cell and try a value, and so on. If there is no possible value for a chosen cell, it goes back to the previous cell and try another value for that cell (backtracking), because the previous value shouldn't be correct when another cell cannot have a legitimate value.  When there is no more empty cell at a certain point we have found a solution. If all possibilities are exhausted by going through the depth-first search, we can say that there is no solution.
+
+Since the exact-cover problem is NP-complete **[3]**, we know the running time can be very long even for this small size problem. So we have to find some heuristics to reduce the running time. One way to do it is reduce the number of branches near the top of the tree by choosing empty cells based on information of possible values.
+I tried three methods of finding the next cell:
+
+1. Just choose empty cells based on the positions at the board, not using the information of possible values. One way to do it is starting from the top-left corner, going from left to right, and then top to bottom.
+
+1. Use the initial configuration to find out the number of possible values for all empty cells
+by sorting the empty cells by the ascending order using the number of possible values. This information changes during the process, but changes are ignored here. It just uses the initial configuration to find the order and use it throughout the process.
+
+1. To consider changes during the process, whenever we need to choose the next empty cell,
+search the all remaining empty cells and choose the empty cell with the minimum number of possibilities. This is the best way to reduce the number of visits to the empty cells, but it takes some time to search at every step.
+
+I implemented all three methods as three derived classes of the Sudoku class, and 
+briefly examined performances of all three methods in the next section.
   
   
   
 ##3. Implementation
 
 The language of choice is C++, which I am most familiar with, for this
-challenge (only using features supported by C++03). First, I describe
-classes I made for this program; second, I explain how the flow of the
-game is managed; third, I show how to run the code and how to play the
-game using this program briefly; and lastly, I describe how each card is
-represented during the game.
+challenge (only using features supported by C++03). First I describe
+classes I made for this program; and then I show how to run the code and 
+simple discussion on performances.
 
 ###3.1. Classes
 
@@ -237,7 +257,7 @@ Still  heuristics can be quite important as seen here, especially for hard puzzl
 
 I used in this code the recursive backtracking algorithm **[4]**. In this algorithm, the program visits empty cells and try a possible value one by one. If a value is valid, then try another empty cell and try possible values. If there is no possible value for a cell, go back to the previous cell and try another value for that cell. If it reaches the point where there is no more empty cell, the solution is found. It is easy to see that how to find the next cell can be crucial when it comes to the performance.
 Here I implemented three different methods when finding the next empty cell, and the third one, where the cell with the minimum possibilities is found at every step, was chosen.
-It can be time-consuming to search through all remaining empty cells at every step, however, it can save a lot of computing time in extreme cases, while comparable to other methods in other cases.
+It can be time-consuming to search through all remaining empty cells at every step; however, it can save a lot of computing time in extreme cases, while comparable to other methods in other cases.
 
 The reason is quite simple: we are basically performing a DFS (depth-first search) on a big tree, and if we reduce the number of branches near the top of the tree, we can reduce the number of visiting cells by a lot for big trees.
 
@@ -252,3 +272,5 @@ The reason is quite simple: we are basically performing a DFS (depth-first searc
 1. [http://en.wikipedia.org/wiki/Karp%27s\_21\_NP-complete\_problems](http://en.wikipedia.org/wiki/Karp%27s\_21\_NP-complete\_problems)
 
 1. [http://see.stanford.edu/materials/icspacs106b/H19-RecBacktrackExamples.pdf](http://see.stanford.edu/materials/icspacs106b/H19-RecBacktrackExamples.pdf)
+
+1. [http://en.wikipedia.org/wiki/Knuth%27s\_Algorithm\_X](http://en.wikipedia.org/wiki/Knuth%27s\_Algorithm\_X)
